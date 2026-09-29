@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" manifest="./cache.manifest">
+
+<head>
+  <meta charset="utf8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>WAK1360-RELAPSE PS5 Exploit Host by arg0WAK</title>
+  <link rel="stylesheet" href="./assets/index.css">
+  <script src="./src/firmware.js"></script>
+</head>
+
+<body>
+  <div class="shell">
+    <header class="rail">
+      <span class="brand">WAK<b>1360</b></span>
+      <span>· RELAPSE</span>
+      <span class="spacer"></span>
+      <span class="stat"><span class="dot" id="railDot"></span><span id="railState">JB INCOMPATIBLE</span></span>
+    </header>
+
+    <main>
+      <div class="titleblock">
+        <h1>WAK1360<span class="rel">·relapse</span></h1>
+        <span class="rev">autoloader / 7.00 - 13.60 </span>
+      </div>
+
+      <section class="console" aria-label="Console output">
+        <div class="console-head">
+          <span>Output</span>
+          <span class="spacer"></span>
+          <span class="tag err" id="consoleTag">UNSUPPORTED</span>
+        </div>
+        <div class="console-body" id="log">
+        </div>
+      </section>
+
+      <nav class="controls" id="menu">
+        <button class="btn start sel" id="startBtn" data-act="start" aria-disabled="true">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />
+          </svg>
+          <span class="lbl"><b>START</b><span id="startMeta">System incompatible</span></span>
+        </button>
+
+        <button class="btn" id="payloadsBtn" data-act="payloads">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <path d="M8 9h5M8 13h8M8 17h4" />
+          </svg>
+          <span class="lbl"><b>PAYLOADS</b><span id="plMeta">WAITING...</span></span>
+        </button>
+
+        <button class="btn" id="autoBtn" data-act="autoload" aria-pressed="false">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M4 12a8 8 0 1 1 2.3 5.6" />
+            <path d="M4 20v-4h4" />
+          </svg>
+          <span class="lbl"><b>AUTOLOAD</b><span>disabled</span></span>
+          <span class="toggle-wrap"><span class="toggle"></span></span>
+        </button>
+      </nav>
+    </main>
+
+    <footer class="foot">
+      <span>Github: <a href="https://github.com/arg0WAK" target="_blank" rel="noopener noreferrer">arg0WAK</a></span>
+      <span class="spacer"></span>
+      <span>BUILD v1.00</span>
+    </footer>
+  </div>
+
+  <div id="panel" aria-hidden="true">
+    <div class="backdrop" id="backdrop"></div>
+    <div class="panel-box" role="dialog" aria-label="Panel">
+      <div class="panel-head">
+        <h2 id="panel-title">Payloads</h2>
+        <button class="close-btn" id="closeBtn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="panel-body"></div>
+    </div>
+  </div>
+
+  <script src="./src/helper.js"></script>
+  <script src="./src/main.js"></script>
+  <script src="./src/rop.js"></script>
+  <script src="./src/utils/syscalls.js"></script>
+  <script type="module" src="./src/site.js"></script>
+</body>
+
+</html>
