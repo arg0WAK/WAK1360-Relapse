@@ -329,14 +329,30 @@ try {
     document.getElementById('closeBtn')?.addEventListener('click', closePanel);
     document.getElementById('backdrop')?.addEventListener('click', closePanel);
 
-    setTimeout(() => {
-        if (autoload) {
-            if (fwIsValid) { printLog('AUTO_START', 'a'); setTimeout(runStart, 600); }
-            else { printLog('AUTO_CANCEL', 'e'); }
+    function waitForExploitChain(attempts) {
+        if (typeof window.runRelapseExploit === "function") {
+            setTimeout(runStart, 600);
+        } else if (attempts < 40) {
+            setTimeout(() => waitForExploitChain(attempts + 1), 250);
         } else {
-            printLog('READY', 'i', {}, true);
+            printLog('ERR_FATAL', 'e', { err: "site.js load timeout. Exploit chain missing." });
         }
-    }, 500);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (autoload) {
+                if (fwIsValid) {
+                    printLog('AUTO_START', 'a');
+                    waitForExploitChain(0);
+                } else {
+                    printLog('AUTO_CANCEL', 'e');
+                }
+            } else {
+                printLog('READY', 'i', {}, true);
+            }
+        }, 500);
+    });
 
 } catch (globalErr) {
     console.error("Init Error:", globalErr);
