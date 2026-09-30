@@ -133,3 +133,5 @@ Credits
 This project is built upon the foundational research, tools, and relentless dedication of the PlayStation scene. We would like to extend our deepest gratitude to the following developers and researchers for making this exploit chain possible:
 
 **ntfargo, ufm42, Sonic\_Iso, Jordy, Dr. Yenyen, TheFlow, SlidyBat, Flatz, cow, nhk, bollarz, Sleirsgoevy, EchoStretch,** and **EarthOnion**.
+
+Also thanks **0xp0co** (aydencharles) for OnionHEN.
