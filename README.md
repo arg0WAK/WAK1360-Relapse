@@ -12,7 +12,6 @@ Features
 Directory Structure
 -------------------
 
-    .
     ├── assets/
     │   └── index.css
     ├── index.html
