@@ -249,12 +249,6 @@ const runStart = () => {
             window.runRelapseExploit().finally(() => {
                 busy = false;
                 printLog('DONE_CURSOR', 'g');
-
-                setTimeout(() => {
-                    window.history.back();
-                    window.history.go(-1);
-                    setTimeout(() => { window.location.href = 'about:blank'; }, 500);
-                }, 2500);
             });
         } else {
             throw new Error("site.js or exploit chain missing");
