@@ -26,13 +26,6 @@ const STRINGS = {
     MAN_EMPTY: 'manifest empty or not loaded yet',
     READY: 'awaiting target...',
     DONE_CURSOR: 'chain completed. exiting...',
-    CACHE_CHK: 'checking offline cache...',
-    CACHE_DL: 'downloading offline cache...',
-    CACHE_PROG: 'caching files: {loaded}/{total}',
-    CACHE_READY: 'offline cache ready. you can disconnect the internet.',
-    CACHE_NOUPD: 'offline cache is up to date.',
-    CACHE_UPD: 'cache updated. please refresh the page.',
-    CACHE_ERR: 'offline cache error. check manifest or connection.'
 };
 
 const logEl = document.getElementById('log');
@@ -160,33 +153,6 @@ function syncAutoUI() {
     }
 }
 
-function initAppCache() {
-    if (!window.applicationCache) return;
-
-    const cache = window.applicationCache;
-
-    cache.addEventListener('checking', () => printLog('CACHE_CHK', 'i'), false);
-    cache.addEventListener('downloading', () => printLog('CACHE_DL', 'i'), false);
-
-    cache.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-            printLog('CACHE_PROG', 'i', { loaded: e.loaded, total: e.total });
-        }
-    }, false);
-
-    cache.addEventListener('cached', () => printLog('CACHE_READY', 'g'), false);
-    cache.addEventListener('noupdate', () => printLog('CACHE_NOUPD', 'g'), false);
-
-    cache.addEventListener('updateready', () => {
-        if (cache.status === cache.UPDATEREADY) {
-            printLog('CACHE_UPD', 'a');
-            try { cache.swapCache(); } catch (err) { }
-        }
-    }, false);
-
-    cache.addEventListener('error', () => printLog('CACHE_ERR', 'e'), false);
-}
-
 function syncStartMeta() {
     if (!startMeta) return;
     if (!fwIsValid) { startMeta.textContent = 'System incompatible'; return; }
@@ -249,6 +215,12 @@ const runStart = () => {
             window.runRelapseExploit().finally(() => {
                 busy = false;
                 printLog('DONE_CURSOR', 'g');
+
+                setTimeout(() => {
+                    window.history.back();
+                    window.history.go(-1);
+                    setTimeout(() => { window.location.href = 'about:blank'; }, 500);
+                }, 2500);
             });
         } else {
             throw new Error("site.js or exploit chain missing");
@@ -308,7 +280,6 @@ const selectMenu = n => {
 };
 
 try {
-    initAppCache();
     checkFirmwareOnLoad();
     syncAutoUI();
     syncStartMeta();
