@@ -1,0 +1,17 @@
+{
+  "name": "WAK1360-Relapse Autoloader",
+  "version": "1.0.0",
+  "description": "W.A.K. (WebKit Automated Kernel) - PS4 7.00-13.60 exploit host build tooling",
+  "private": true,
+  "type": "module",
+  "author": "arg0WAK",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

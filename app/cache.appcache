@@ -1,0 +1,12 @@
+CACHE MANIFEST
+# build @BUILD_ID@
+
+CACHE:
+/install/payloads/orchestrator.elf
+@APP_FILES@
+
+NETWORK:
+*
+
+FALLBACK:
+/ /index.html

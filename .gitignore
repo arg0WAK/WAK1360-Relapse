@@ -1,0 +1,5 @@
+/app/dist/
+/app/node_modules/
+/build/
+sce-hell0.elf
+/install/payloads/orchestrator.elf
