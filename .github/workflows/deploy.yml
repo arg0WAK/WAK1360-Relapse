@@ -1,0 +1,271 @@
+name: Sync, Build & Deploy WAK1360-Relapse
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: "Force sce-hell0 build and release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  sync-build-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v4
+        with:
+          path: "main-workspace"
+          fetch-depth: 0
+
+      - name: Checkout sce-hell0 Branch
+        uses: actions/checkout@v4
+        with:
+          ref: "sce-hell0"
+          path: "sce-hell0-workspace"
+
+      - name: Check for relevant file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          working-directory: ./main-workspace
+          predicate-quantifier: "every"
+          list-files: json
+          filters: |
+            needs_build:
+              - '{js,json,offsets,css,payloads}/**'
+              - '!js/helper.js'
+
+      - name: Sync changed files to sce-hell0
+        id: sync
+        if: steps.filter.outputs.needs_build == 'true' || inputs.force_build == true || contains(github.event.head_commit.message, '[release]')
+        env:
+          CHANGED_FILES: ${{ steps.filter.outputs.needs_build_files }}
+          FORCE: ${{ inputs.force_build == true || contains(github.event.head_commit.message, '[release]') }}
+        run: |
+          printf '%s' "${CHANGED_FILES:-[]}" | jq -r '.[]' | while IFS= read -r f; do
+            src="main-workspace/$f"
+            dst="sce-hell0-workspace/app/$f"
+            if [ -f "$src" ] && [ -f "$dst" ]; then
+              echo "Updating: $f"
+              cp "$src" "$dst"
+            else
+              echo "Skipped (no counterpart or deleted): $f"
+            fi
+          done
+
+          cd sce-hell0-workspace
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/
+
+          if git diff --cached --quiet; then
+            if [[ "$FORCE" == "true" ]]; then
+              echo "Forced build requested."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "No real changes in sce-hell0, skipping build."
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            git commit -m "Auto-sync: Updated files from main branch before ELF build"
+            git push origin sce-hell0
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute build version
+        id: version
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # CalVer + build time (UTC): vYYYY.MM.DD-HHMM
+          TAG="v$(date -u +'%Y.%m.%d-%H%M')"
+
+          # Same-minute collision: append seconds
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            TAG="v$(date -u +'%Y.%m.%d-%H%M%S')"
+          fi
+          echo "Build version: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js (app build)
+        if: steps.sync.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build sce-hell0 JS
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: ./sce-hell0-workspace/app
+        run: |
+          npm install
+          npm run build
+
+      - name: Stamp build version into sce-hell0 index files
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          for f in ./sce-hell0-workspace/install/index.html ./sce-hell0-workspace/app/index.html; do
+            if [ -f "$f" ]; then
+              sed -i -E "s|(<span class=\"version\">)[^<]*(</span>)|\1BUILD ${VERSION}\2|" "$f"
+              grep -q "BUILD ${VERSION}" "$f" && echo "Updated: $f" || echo "::warning::version span not found in $f"
+            else
+              echo "::warning::File not found: $f"
+            fi
+          done
+
+      - name: Setup PS5 Payload SDK
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          wget https://github.com/ps5-payload-dev/sdk/releases/latest/download/ps5-payload-sdk.zip
+          sudo unzip -d /opt ps5-payload-sdk.zip
+          echo "PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk" >> $GITHUB_ENV
+
+      - name: Build sce-hell0.elf
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: ./sce-hell0-workspace
+        run: make clean && make
+
+      - name: Create GitHub Release
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEFORE: ${{ github.event.before }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          echo "New release: $TAG"
+
+          # Changelog: commits in this push (fallback: last 10 commits)
+          cd main-workspace
+          if [ -z "$BEFORE" ] || [[ "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            RANGE="-n 10"
+          else
+            RANGE="$BEFORE..HEAD"
+          fi
+          {
+            echo "## Changelog"
+            echo
+            echo '```'
+            git log $RANGE --pretty=format:'%h %s'
+            echo
+            echo '```'
+          } > ../release-notes.md
+          cd ..
+
+          gh release create "$TAG" ./sce-hell0-workspace/sce-hell0.elf \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "sce-hell0 $TAG" \
+            --notes-file release-notes.md
+
+      - name: Copy new ELF to Main Workspace
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          mkdir -p ./main-workspace/payloads
+          cp ./sce-hell0-workspace/sce-hell0.elf ./main-workspace/payloads/sce-hell0.elf
+
+      - name: Download previous sce-hell0.elf
+        if: steps.sync.outputs.changed != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Build skipped, downloading previous ELF."
+          mkdir -p ./main-workspace/payloads
+          gh release download --pattern "sce-hell0.elf" --dir ./main-workspace/payloads --repo ${{ github.repository }} --clobber
+
+      - name: Setup Node.js (main build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Build Main Branch JS
+        working-directory: ./main-workspace
+        run: |
+          npm install
+          npm run build
+          rm -rf node_modules
+
+      - name: Stamp build version into index.html
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Latest release tag (just created if a build ran, otherwise the previous one)
+          VERSION=$(gh release list --limit 1 --json tagName -q '.[0].tagName' --repo "$GITHUB_REPOSITORY")
+
+          if [ -z "$VERSION" ]; then
+            echo "::warning::No release found, index.html left unchanged"
+            exit 0
+          fi
+          echo "Stamping version: $VERSION"
+
+          for f in ./main-workspace/index.html ./main-workspace/dist/index.html; do
+            if [ -f "$f" ]; then
+              sed -i -E "s|(<span class=\"version\">)[^<]*(</span>)|\1BUILD ${VERSION}\2|" "$f"
+              grep -q "BUILD ${VERSION}" "$f" && echo "Updated: $f" || echo "::warning::version span not found in $f"
+            fi
+          done
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./main-workspace"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Push to GCP bare repo
+        working-directory: ./main-workspace
+        env:
+          SSH_KEY: ${{ secrets.GCP_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.GCP_KNOWN_HOSTS }}
+          GCP_USER: ${{ secrets.GCP_USER }}
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+          GCP_REPO_PATH: ${{ secrets.GCP_REPO_PATH }}
+        run: |
+          GCP_USER=$(printf '%s' "$GCP_USER" | tr -d '[:space:]')
+          GCP_HOST=$(printf '%s' "$GCP_HOST" | tr -d '[:space:]')
+          GCP_REPO_PATH=$(printf '%s' "$GCP_REPO_PATH" | tr -d '[:space:]')
+          echo "::add-mask::$GCP_USER"
+          echo "::add-mask::$GCP_HOST"
+          echo "::add-mask::$GCP_REPO_PATH"
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/gcp_key
+          chmod 600 ~/.ssh/gcp_key
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+
+          # Temporary local commit with ELF, build output and stamped index.html (never pushed to GitHub)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f payloads/sce-hell0.elf
+          git add index.html
+
+          if [ -d dist ]; then
+            git add -f dist
+          else
+            echo "::warning::dist folder not found, skipping it"
+          fi
+
+          git commit -q --allow-empty -m "Deploy: main + sce-hell0.elf + dist"
+
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/gcp_key -o IdentitiesOnly=yes -o LogLevel=ERROR" \
+            git push -q --force "ssh://${GCP_USER}@${GCP_HOST}${GCP_REPO_PATH}" HEAD:refs/heads/main
