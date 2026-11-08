@@ -6,6 +6,8 @@ This release introduces a redesigned **One-Tap Autoloader** architecture, stream
 
 The entire previous build has been completely overhauled, and the chain’s execution process has been reorganized with a focus on speed and stability.
 
+https://github.com/user-attachments/assets/34250afd-1afa-4675-a7a8-66244afc6e88
+
 ## Features
 
 - **Broad Firmware Support:** Dynamic offset loading for PS5 firmwares 7.00 through 13.60.
@@ -94,6 +96,15 @@ This method provides the most integrated experience by routing the native PS5 Us
    > **Warning:** Never specify an external secondary DNS (such as `8.8.8.8` or `1.1.1.1`). An active secondary DNS can bypass the sinkhole if the primary query times out, exposing your console to official update servers.
 
 3. Navigate to **Settings** > **Guide & Tips, Health & Safety, and Other Information** > **Guide and Tips** > **User's Guide** to launch the exploit host.
+
+### Optional: Manual Payload Injection
+
+While the DNS IP address handles the complete chain automatically, you can still opt to inject the sce-hell0.elf payload manually over the network. Once the initial WebKit and kernel exploits succeed and the console opens a payload listener port, use a TCP tool like netcat to send the ELF file directly to your PS5:
+
+```bash
+# Replace <PS5_IP> with your console's local IP address and 9021 with the active listener port
+nc <PS5_IP> 9021 < payloads/sce-hell0.elf
+```
 
 ### 2. Direct Web Hosting (GitHub Pages)
 
