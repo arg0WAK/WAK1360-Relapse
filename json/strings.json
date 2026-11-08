@@ -1,0 +1,89 @@
+{
+  "events": {
+    "SYS_FAIL": {
+      "text": "System check failed: {msg}",
+      "status": "error",
+      "indicator": "INCOMPATIBLE"
+    },
+    "SYS_MISS": {
+      "text": "firmware module (firmware.js) is missing!",
+      "status": "error",
+      "indicator": "NOT_SUPPORTED"
+    },
+    "SYS_OK": {
+      "text": "firmware {fw} detected… ok",
+      "status": "success",
+      "indicator": "READY"
+    },
+    "WEBKIT_START": {
+      "text": "initializing WebKit exploit...",
+      "status": "info"
+    },
+    "START_INC": {
+      "text": "cannot start: incompatible firmware detected",
+      "status": "error"
+    },
+    "CHAIN_SYS": {
+      "text": "initiating system exploit chain...",
+      "status": "info"
+    },
+    "ERR_FATAL": {
+      "text": "fatal error: {err}",
+      "status": "error",
+      "indicator": "ERROR"
+    },
+    "PL_LOAD": {
+      "text": "loading payload: {file}",
+      "status": "warning"
+    },
+    "PL_WAIT": {
+      "text": "waiting {ms}ms...",
+      "status": "info"
+    },
+    "PL_SENT": {
+      "text": "{file} sent successfully.",
+      "status": "success"
+    },
+    "PL_ERR": {
+      "text": "failed to execute {file}: {err}",
+      "status": "error"
+    },
+    "PL_FOUND": {
+      "text": "payload found: {file}",
+      "status": "success"
+    },
+    "PL_ERR_LOAD": {
+      "text": "failed to load {file}: {err}",
+      "status": "error"
+    },
+    "PL_DONE": {
+      "text": "all selected payloads processed.",
+      "status": "success"
+    },
+    "READY": {
+      "text": "awaiting target...",
+      "status": "info"
+    },
+    "ALREADY_RUNNING": {
+      "text": "exploit already run, skipping execution",
+      "status": "warning",
+      "indicator": "ALREADY_RUNNING"
+    },
+    "DONE_CURSOR": {
+      "text": "chain completed. exiting...",
+      "status": "success"
+    },
+    "CREDITS": {
+      "text": "Credits: ntfargo, ufm42, Sonic_Iso, Jordy, Dr. Yenyen, TheFlow, SlidyBat, Flatz, cow, nhk, bollarz, Sleirsgoevy, EchoStretch, EarthOnion",
+      "status": "info"
+    }
+  },
+  "states": {
+    "READY": { "text": "READY", "status": "info" },
+    "INSTALLING": { "text": "INSTALLING", "status": "info" },
+    "INCOMPATIBLE": { "text": "INCOMPATIBLE FIRMWARE", "status": "error" },
+    "ERROR": { "text": "ERROR", "status": "error" },
+    "NOT_SUPPORTED": { "text": "FIRMWARE NOT SUPPORTED", "status": "error" },
+    "ALREADY_RUNNING": { "text": "ALREADY RUNNING", "status": "warning" }
+  }
+}
